@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Telleva Express</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- Fuente y Animate.css -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+  <style>
+    :root{
+      --azul-claro:#4db5ff;
+      --azul-oscuro:#0077cc;
+      --blanco:#ffffff;
+      --amarillo:#ffde59;
+      --gris:#f5f7fa;
+      --texto:#222;
+      --nav-height:70px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:'Poppins',sans-serif;
+      background:var(--gris);
+      color:var(--texto);
+      -webkit-font-smoothing:antialiased;
+      padding-top: var(--nav-height);
+    }
+
+    .topbar{
+      position:fixed;
+      top:0;
+      left:0;
+      right:0;
+      height:var(--nav-height);
+      background:var(--blanco);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 22px;
+      box-shadow:0 6px 18px rgba(10,30,60,0.08);
+      z-index:999;
+    }
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      text-decoration:none;
+      color:var(--texto);
+      font-weight:700;
+    }
+    .brand .dot{
+      width:10px;height:10px;background:var(--azul-claro);border-radius:3px;display:inline-block;
+    }
+    .btn-home{
+      background:var(--amarillo);
+      color:#222;
+      padding:8px 14px;
+      border-radius:20px;
+      text-decoration:none;
+      font-weight:600;
+      box-shadow:0 6px 14px rgba(0,0,0,0.08);
+      transition:transform .18s ease, box-shadow .18s ease;
+    }
+    .btn-home:hover{ transform:translateY(-3px); box-shadow:0 10px 20px rgba(0,0,0,0.12); }
+
+    header{
+      height:70vh;
+      min-height:420px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+      border-radius:0 0 36px 36px;
+      background: linear-gradient(135deg,var(--azul-claro), var(--azul-oscuro));
+      color:var(--blanco);
+      padding: 40px 20px;
+      margin-bottom: 40px;
+    }
+    header::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background-image: url('https://www.chevrolet.com/content/dam/chevrolet/na/us/english/index/vans/segment-page/01-images/2024-vans-segment-04.png?imwidth=1200');
+      background-size:cover;
+      background-position:center;
+      opacity:0.20;
+      filter: blur(1.5px) saturate(.9);
+    }
+    header .hero{ position:relative; z-index:2; max-width:920px; }
+    header h1{ font-size:2.4rem; margin:0 0 8px; font-weight:700; }
+    header p{ margin:0; color:var(--amarillo); font-weight:600; }
+
+    .container{ max-width:1100px; margin:0 auto; padding:0 20px 60px; }
+    .about{ background:var(--blanco); border-radius:14px; padding:30px; box-shadow:0 10px 24px rgba(10,30,60,0.04); margin-bottom:40px; }
+
+    .smart-section{
+      text-align:center;
+      padding:80px 20px;
+      background:var(--blanco);
+      border-radius:14px;
+      box-shadow:0 10px 24px rgba(10,30,60,0.04);
+      margin-bottom:80px;
+    }
+    .smart-section h2{ color:var(--azul-oscuro); font-size:1.8rem; margin-bottom:10px; }
+    .smart-section p{ max-width:720px; margin:0 auto 40px; color:#444; line-height:1.6; }
+    .smart-grid{ display:flex; justify-content:center; flex-wrap:wrap; gap:30px; }
+    .smart-card{
+      background:var(--gris);
+      border-radius:14px;
+      padding:24px;
+      flex:1 1 300px;
+      max-width:320px;
+      box-shadow:0 6px 16px rgba(10,30,60,0.05);
+      transition:transform .3s ease, box-shadow .3s ease;
+      cursor:pointer;
+    }
+    .smart-card:hover{ transform:translateY(-6px); box-shadow:0 12px 24px rgba(10,30,60,0.08); }
+    .smart-card.active{ background:var(--amarillo); color:#222; }
+
+    #smart-section-container{
+      margin-top:40px;
+      padding:20px;
+      background:var(--gris);
+      border-radius:14px;
+      box-shadow:0 10px 24px rgba(10,30,60,0.04);
+      display:none;
+      transition:all 0.3s ease;
+    }
+
+    footer{ text-align:center;padding:40px 20px;background:var(--azul-oscuro);color:white; }
+
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+      font-weight: 500;
+      animation: fadeIn .5s ease;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0; transform: scale(.95);}
+      to {opacity: 1; transform: scale(1);}
+    }
+  </style>
+</head>
+<body>
+    
+  <script src="https://cdn.botpress.cloud/webchat/v3.5/inject.js"></script>
+  <script src="https://files.bpcontent.cloud/2025/07/02/03/20250702033306-TD44U31X.js" defer></script>
+    
+  <div class="topbar">
+    <a class="brand" href="https://www.telleva.com.mx/" target="_blank">
+      <span class="dot"></span> Grupo Telleva
+    </a>
+    <a class="btn-home" href="https://www.telleva.com.mx/" target="_blank">🌐 Página principal</a>
+  </div>
+
+  <header>
+    <div class="hero">
+      <h1 class="animate__animated animate__fadeInDown">Telleva Express ®</h1>
+      <p class="animate__animated animate__fadeInUp animate__delay-1s">Potenciado por IA 🚀</p>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section id="about" class="about animate__animated">
+      <h2>¿Qué es Telleva Express?</h2>
+      <p><strong>Telleva Express</strong> es la evolución digital de <strong>Grupo Telleva</strong>, creada para ofrecer una experiencia de transporte más rápida, segura y automatizada.</p>
+    </section>
+
+    <!-- ===================================================
+    Pestañas informativas Telleva Express (4 alternadas)
+    =================================================== -->
+    <section id="tabs-info" style="margin-bottom:45px;">
+
+      <!-- Tab 1 (izquierda) -->
+      <div style="
+        background:white;
+        padding:20px;
+        border-radius:14px;
+        box-shadow:0 6px 20px rgba(0,0,0,0.06);
+        max-width:45%;
+        margin:0 0 25px 0;
+      ">
+        <h3>🎯 Nuestro objetivo</h3>
+        <p>Telleva Express es una plataforma potenciada por IA, una nueva herramienta y extension de Grupo Telleva, estamos avanzando al futuro.</p>
+      </div>
+
+      <!-- Tab 2 (derecha) -->
+      <div style="
+        background:white;
+        padding:20px;
+        border-radius:14px;
+        box-shadow:0 6px 20px rgba(0,0,0,0.06);
+        max-width:45%;
+        margin:0 0 25px auto;
+      ">
+        <h3>❓ Que cambia con Telleva Express?</h3>
+        <p>Telleva Express es una iniciativa para fomentar el avanze tecnologico, esto nos permitira avanzar y no quedarnos atras, ademas la IA da muchas ventajas en cuanto a automatizacion y es sin duda el futuro de nuestra civilizacion.</p>
+      </div>
+
+      <!-- Tab 3 (izquierda) -->
+      <div style="
+        background:white;
+        padding:20px;
+        border-radius:14px;
+        box-shadow:0 6px 20px rgba(0,0,0,0.06);
+        max-width:45%;
+        margin:0 0 25px 0;
+      ">
+        <h3>🤖 Nuestros Asistentes de IA</h3>
+        <p>Actualmente contamos con 2 asistentes virtuales, el de la pagina que se encuentra a la izquierda abajo, y nuestro asistente telefonico, Pepe (+1 (269) 286 0978).</p>
+      </div>
+
+      <!-- Tab 4 (derecha) -->
+      <div style="
+        background:white;
+        padding:20px;
+        border-radius:14px;
+        box-shadow:0 6px 20px rgba(0,0,0,0.06);
+        max-width:45%;
+        margin:0 0 25px auto;
+      ">
+        <h3>🚐 Nuestros servicios</h3>
+        <p>Contamos con transporte turistico, de personal y escolar en mas de 30 destinos y mas de 30 unidades.</p>
+      </div>
+
+    </section>
+
+
+    <section id="inteligente" class="smart-section animate__animated">
+      <h2>💡 Sección Inteligente</h2>
+      <p>Explora las funciones impulsadas por inteligencia artificial que hacen de <strong>Telleva Express</strong> una plataforma única.</p>
+
+      <div class="smart-grid">
+        <div class="smart-card">
+          <h3>🗺️ Rutas Inteligentes</h3>
+          <p>Calculamos automáticamente las mejores rutas considerando tráfico, tiempo y distancia.</p>
+        </div>
+        <div class="smart-card">
+          <h3>🔍 Buscador de disponibilidad</h3>
+          <p>Busca disponibilidad de colonias en transporte escolar mas rapido.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================
+    SECCIÓN: Rutas adaptadas a tu gusto
+    ==================================================== -->
+    <section id="rutasPersonalizadas" style="padding:40px 20px;">
+      <h2 style="margin-bottom:10px;">🌄 Rutas adaptadas a tu gusto</h2>
+      <p style="margin-bottom:25px;color:#444;">
+        Crea tu ruta perfecta según tus gustos y número de pasajeros.
+      </p>
+
+      <div class="smart-card" id="abrirFormularioRutas" 
+          style="cursor:pointer;max-width:350px;margin:auto;">
+        <h3>✨ Crear mi ruta personalizada</h3>
+        <p>Te recomendaremos las 2 mejores rutas para ti.</p>
+      </div>
+
+      <!-- Contenedor del formulario (se oculta hasta que lo abres) -->
+      <div id="formularioRutasContainer"
+        style="display:none;margin-top:25px;max-width:550px;margin:auto;">
+        
+        <form id="formRutas" 
+          style="display:flex;flex-direction:column;gap:15px;padding:20px;
+                background:white;border-radius:14px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+
+          <label><strong>Tipo de ruta:</strong></label>
+          <select id="rutaTipo" required
+            style="padding:10px;border-radius:8px;border:1px solid #ccc;">
+            <option value="">Selecciona una opción</option>
+            <option value="Turistico">Turístico</option>
+            <option value="Historico">Histórico</option>
+            <option value="Mercado">Mercado</option>
+            <option value="Vistas">Vistas</option>
+          </select>
+
+          <label><strong>Pasajeros:</strong></label>
+          <input id="rutaPasajeros" type="number" min="1" max="6" value="1" required
+            style="padding:10px;border-radius:8px;border:1px solid #ccc;">
+
+          <button type="submit"
+            style="padding:12px;background:var(--azul-oscuro);color:white;
+                  border:none;border-radius:10px;cursor:pointer;font-weight:600;">
+            🎯 Encontrar mis rutas ideales
+          </button>
+        </form>
+
+        <div id="resultadoRutas"
+            style="display:none;margin-top:20px;padding:20px;background:#f4f8ff;
+                    border-radius:12px;">
+          <h3 style="margin-top:0;color:var(--azul-oscuro);">Tus mejores rutas</h3>
+          <div id="listaDeRutas"></div>
+        </div>
+
+      </div>
+    </section>
+
+
+  </main>
+  <footer>Asistente virtual: +1 (269) 286 0978</footer>
+  <footer>© 2025 Grupo Telleva | Telleva Express - Innovando el transporte con IA</footer>
+
+  <script>
+    const smartCards = document.querySelectorAll('.smart-card');
+    const container = document.createElement('div');
+    container.id = 'smart-section-container';
+    document.querySelector('.smart-section').appendChild(container);
+
+    const sections = {
+      "🗺️ Rutas Inteligentes": `
+        <h3>🗺️ Rutas Inteligentes</h3>
+        <p>Selecciona tu punto de salida, destino, fecha, hora y número de pasajeros para obtener la mejor tarifa estimada.</p>
+        <form id="formRuta" style="max-width:600px;margin:20px auto;display:flex;flex-direction:column;gap:12px;">
+          <input id="salida" placeholder="📍 Punto de salida" required style="padding:10px;border-radius:8px;border:1px solid #ccc;">
+          <input id="destino" placeholder="🎯 Destino" required style="padding:10px;border-radius:8px;border:1px solid #ccc;">
+          <label for="fecha">📅 Fecha del viaje:</label>
+          <input id="fecha" type="date" required style="padding:10px;border-radius:8px;border:1px solid #ccc;">
+          <label for="hora">🕒 Hora de partida:</label>
+          <input id="hora" type="time" required style="padding:10px;border-radius:8px;border:1px solid #ccc;">
+          <label for="pasajeros">👥 Número de pasajeros:</label>
+          <input id="pasajeros" type="number" min="1" max="6" value="1" required style="padding:10px;border-radius:8px;border:1px solid #ccc;">
+          <button type="submit" style="padding:10px 16px;background:var(--azul-oscuro);color:white;border:none;border-radius:10px;cursor:pointer;font-weight:600;">🚐 Calcular mejor tarifa</button>
+        </form>
+        <div id="resultadoRuta" style="margin-top:20px;display:none;background:#f9fbff;padding:20px;border-radius:14px;">
+          <h4 style="color:var(--azul-oscuro);margin-top:0;">Resultado de tu viaje</h4>
+          <p id="detalleRuta"></p>
+        </div>
+      `,
+
+"🔍 Buscador de disponibilidad": `
+    <h3>🔍 Buscador de disponibilidad</h3>
+    <p>Ingresa tu colonia y selecciona tu colegio para verificar disponibilidad.</p>
+
+    <form id="formDisponibilidad" style="max-width:500px;margin:20px auto;display:flex;flex-direction:column;gap:12px;">
+      <input id="coloniaInput" placeholder="🏠 Escribe tu colonia" required
+        style="padding:10px;border-radius:8px;border:1px solid #ccc;">
+
+      <label><strong>Colegio:</strong></label>
+      <select id="colegioSelect" required
+        style="padding:10px;border-radius:8px;border:1px solid #ccc;">
+        <option value="">Selecciona un colegio</option>
+        <option value="Santa Maria">Santa Maria</option>
+        <option value="Colegio Valladolid">Colegio Valladolid Guadalupe</option>
+        <option value="Colegio 3">Colegio 3</option>
+        <!-- AQUÍ AGREGAS LOS COLEGIOS QUE TÚ QUIERAS -->
+      </select>
+
+      <button type="submit" style="padding:10px 16px;background:var(--azul-oscuro);color:white;border:none;border-radius:10px;cursor:pointer;font-weight:600;">
+        🔎 Buscar disponibilidad
+      </button>
+    </form>
+
+    <div id="resultadoDisponibilidad" style="margin-top:20px;display:none;padding:20px;border-radius:14px;"></div>
+  `
+    };
+
+    let activeCard = null;
+
+    smartCards.forEach(card=>{
+      card.addEventListener('click',()=>{
+        const title = card.querySelector('h3').textContent.trim();
+        if(activeCard === card){
+          card.classList.remove('active');
+          container.style.display='none';
+          activeCard=null;
+          return;
+        }
+        if(activeCard) activeCard.classList.remove('active');
+        card.classList.add('active');
+        activeCard=card;
+        container.innerHTML=sections[title]||'<p>Contenido no disponible.</p>';
+        container.style.display='block';
+
+        // ========================
+        //    RUTAS INTELIGENTES
+        // ========================
+        if(title==="🗺️ Rutas Inteligentes"){
+          const form=document.getElementById('formRuta');
+          form.addEventListener('submit',async e=>{
+            e.preventDefault();
+            const salida=form.salida.value;
+            const destino=form.destino.value;
+            const fecha=form.fecha.value;
+            const hora=form.hora.value;
+            const pasajeros=parseInt(form.pasajeros.value)||1;
+
+            if(!salida||!destino||salida===destino){
+              alert("Selecciona puntos diferentes.");
+              return;
+            }
+
+            try {
+              const r1 = await fetch(`https://router.project-osrm.org/route/v1/driving/${encodeURIComponent(salida)};${encodeURIComponent(destino)}?overview=false&alternatives=false&annotations=distance,duration`);
+              const data = await r1.json();
+              if (!data.routes || data.routes.length === 0) throw new Error("Sin resultados");
+
+              const distancia = data.routes[0].distance / 1000;
+              const tiempo = Math.round(data.routes[0].duration / 60);
+              const precioKm = 8;
+              const costoBase = distancia * precioKm * 1.3;
+              const costoPasajeros = costoBase + (pasajeros-1)*10;
+
+              document.getElementById('detalleRuta').innerHTML=`
+                <strong>Salida:</strong> ${salida}<br>
+                <strong>Destino:</strong> ${destino}<br>
+                <strong>Fecha:</strong> ${fecha}<br>
+                <strong>Hora:</strong> ${hora}<br>
+                <strong>Pasajeros:</strong> ${pasajeros}<br><br>
+                🛣️ <strong>Distancia:</strong> ${distancia.toFixed(1)} km<br>
+                ⏱️ <strong>Tiempo estimado:</strong> ${tiempo} min<br>
+                💰 <strong>Precio estimado:</strong> $${costoPasajeros.toFixed(2)} MXN`;
+              document.getElementById('resultadoRuta').style.display='block';
+            } catch(err){
+              alert("No se pudo calcular la ruta real. Intenta con direcciones más específicas.");
+            }
+          });
+        }
+
+        // ================================
+        //     BUSCADOR DE DISPONIBILIDAD
+        // ================================
+        if(title==="🔍 Buscador de disponibilidad"){
+
+          // 🔵 EJEMPLO DE DATOS — TÚ CAMBIAS ESTO
+          // Cada colegio tiene una lista de colonias disponibles
+          const disponibilidad = {
+            "Santa Maria": ["Centro", "Las Palmas", "San Jorge", "Obrera"],
+            "Colegio Valladolid": ["Los Pinos", "Santa Fe", "Obrera"],
+            "Colegio 3": ["Industrial", "Real del Sol", "Centro"]
+          };
+
+          const form = document.getElementById('formDisponibilidad');
+          const resultado = document.getElementById('resultadoDisponibilidad');
+
+          form.addEventListener('submit', e=>{
+            e.preventDefault();
+
+            const colonia = document.getElementById('coloniaInput').value.trim().toLowerCase();
+            const colegio = document.getElementById('colegioSelect').value;
+
+            if(!colegio){
+              alert("Selecciona un colegio.");
+              return;
+            }
+
+            // Obtiene colonias disponibles del colegio elegido
+            const lista = disponibilidad[colegio].map(c=>c.toLowerCase());
+
+            const coincide = lista.includes(colonia);
+
+            // Mostrar resultado
+            resultado.style.display = "block";
+
+            if(coincide){
+              resultado.style.background = "#d4edda";
+              resultado.style.color = "#155724";
+              resultado.innerHTML = `
+                <h4>✅ Disponibilidad encontrada</h4>
+                Sí tenemos disponibilidad en la colonia <strong>${colonia}</strong> para el colegio <strong>${colegio}</strong>.
+                Puedes encontrar mas informacion en: +1 (269) 286 0978 +52 811 217 9018 +52 811 715 8909
+              `;
+            } else {
+              resultado.style.background = "#f8d7da";
+              resultado.style.color = "#721c24";
+              resultado.innerHTML = `
+                <h4>❌ No disponible</h4>
+                No contamos con servicio para la colonia <strong>${colonia}</strong> en el colegio <strong>${colegio}</strong>.
+              `;
+            }
+          });
+        }
+
+
+      });
+    });
+        // ==================================================================
+    //     LÓGICA: Rutas adaptadas a tu gusto
+    // ==================================================================
+    const botonRutas = document.getElementById("abrirFormularioRutas");
+    const contenedorRutas = document.getElementById("formularioRutasContainer");
+    const formRutas = document.getElementById("formRutas");
+    const resultadoRutas = document.getElementById("resultadoRutas");
+    const listaDeRutas = document.getElementById("listaDeRutas");
+
+    // Mostrar formulario al presionar la tarjeta
+    botonRutas.addEventListener("click", () => {
+      contenedorRutas.style.display = 
+        contenedorRutas.style.display === "none" ? "block" : "none";
+    });
+
+    // 📌 LISTA DE RUTAS (puedes modificarla libremente)
+    const rutasDB = [
+      { nombre: "Recorrido Las Cantinas", tipo: "Turistico", duracion: 120, costo: 350 },
+      { nombre: "Las Cantinas de Guadalupe", tipo: "Turistico", duracion: 120, costo: 370 },
+      { nombre: "Tour Gastronómico Mercados", tipo: "Mercado", duracion: 90, costo: 280 },
+      { nombre: "Ruta Turística Zona Dorada", tipo: "Turistico", duracion: 110, costo: 320 },
+      { nombre: "Mercado Tradicional Express", tipo: "Mercado", duracion: 60, costo: 180 },
+      { nombre: "Mirador Sunset Deluxe", tipo: "Vistas", duracion: 140, costo: 450 },
+      { nombre: "Histórico + Museos", tipo: "Historico", duracion: 180, costo: 420 }
+    ];
+
+    // Recibir formulario
+    formRutas.addEventListener("submit", e => {
+      e.preventDefault();
+
+      const tipo = document.getElementById("rutaTipo").value;
+      const pasajeros = parseInt(document.getElementById("rutaPasajeros").value);
+
+      // Filtrar por tipo
+      let filtradas = rutasDB.filter(r => r.tipo === tipo);
+
+      // Ordenar por "calidad" basándonos en duración y costo
+      filtradas.sort((a,b) => (a.costo + a.duracion/2) - (b.costo + b.duracion/2));
+
+      // Seleccionar 2 mejores
+      const mejores = filtradas.slice(0,2);
+
+      // Mostrar resultados
+      listaDeRutas.innerHTML = mejores.map(r => `
+        <div style="background:white;padding:15px;border-radius:10px;margin-bottom:15px;
+                    box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+          <h4 style="margin:0 0 5px 0;">${r.nombre}</h4>
+          <p style="margin:0;">Tipo: <strong>${r.tipo}</strong></p>
+          <p style="margin:0;">Duración: <strong>${r.duracion} min</strong></p>
+          <p style="margin:0;">Costo aproximado: <strong>$${r.costo}</strong></p>
+          <p style="margin:0;">Pasajeros: <strong>${pasajeros}</strong></p>
+        </div>
+      `).join("");
+
+      resultadoRutas.style.display = "block";
+    });
+
+  </script>
+
+</body>
+</html>
